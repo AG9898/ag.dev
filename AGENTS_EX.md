@@ -67,7 +67,16 @@
 <!-- TODO:
 src/           Application source
 docs/          Project docs and task queue
+  INDEX.md        Documentation navigation map
+  PRD.md          Product requirements and scope
+  ARCHITECTURE.md System topology and boundaries
+  CONVENTIONS.md  Coding standards and patterns
+  DECISIONS.md    Architectural decision log
+  ENV_VARS.md     Environment variable matrix
+  TESTING.md      Test strategy and inventory
   workboard.json  Canonical task queue
+  workboard.schema.json JSON Schema for task queue
+  workboard.md    Workboard field definitions and usage rules
 tests/         Test suite
 scripts/       Utility scripts
 .claude/       Claude harness config
@@ -75,13 +84,15 @@ scripts/       Utility scripts
 -->
 ```
 
+Docs navigation: [`docs/INDEX.md`](docs/INDEX.md)
+
 ---
 
 ## Architecture
 
-<!-- TODO: Key design decisions that constrain implementation choices.           -->
-<!-- Aim for 5–10 bullets. Focus on constraints, not descriptions.              -->
-<!-- Examples:                                                                   -->
+<!-- TODO: 5–10 bullets summarizing the constraints that matter most for day-to-day   -->
+<!-- implementation. Focus on constraints, not descriptions. Keep this section brief — -->
+<!-- the deep-dive lives in docs/ARCHITECTURE.md.                                      -->
 
 - <!-- TODO: e.g. "All external I/O goes through the adapter layer in src/adapters/." -->
 - <!-- TODO: e.g. "Database schema lives in db/migrations/. Never alter tables directly." -->
@@ -89,11 +100,15 @@ scripts/       Utility scripts
 - <!-- TODO: e.g. "Auth is handled exclusively in src/middleware/auth.ts." -->
 - <!-- TODO: e.g. "Config is read from environment variables only. No hardcoded values." -->
 
+Full topology, component responsibilities, data flow, and deployment targets: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+
 ---
 
 ## Code Style & Constraints
 
-<!-- TODO: Hard rules for this codebase. Agents follow these unconditionally.    -->
+<!-- TODO: Hard rules for this codebase. Agents follow these unconditionally.         -->
+<!-- Keep this section to the most critical never/always rules only.                  -->
+<!-- Full conventions, naming rules, and per-stack patterns: docs/CONVENTIONS.md      -->
 
 ### Never
 
@@ -118,11 +133,37 @@ scripts/       Utility scripts
 <!-- - API routes: follow the pattern in src/api/routes/example.ts.            -->
 <!-- - DB queries: use the repository pattern in src/db/repositories/.         -->
 
+Full convention guide: [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
+
+---
+
+## Maintaining Docs
+
+Docs must stay current with the code. Update the relevant doc in the **same commit** as
+the code change — never defer a doc update to a follow-up task.
+
+| What changed | Doc to update |
+|---|---|
+| System topology, services, auth, data flow, deployment | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| Coding pattern, naming rule, or never/always constraint | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) |
+| Env var added, removed, renamed, or changed | [`docs/ENV_VARS.md`](docs/ENV_VARS.md) |
+| New architectural question raised | [`docs/DECISIONS.md`](docs/DECISIONS.md) — add OPEN-XX |
+| Architectural decision resolved | [`docs/DECISIONS.md`](docs/DECISIONS.md) — move to Resolved |
+| Test file added, removed, or pattern changed | [`docs/TESTING.md`](docs/TESTING.md) |
+| Product scope, users, or success criteria changed | [`docs/PRD.md`](docs/PRD.md) |
+| Any doc added, removed, renamed, or moved | [`docs/INDEX.md`](docs/INDEX.md) — always |
+| Constraint or gotcha discovered during a task | This file (`AGENTS.md`) — append to Discoveries |
+
+**Rule:** If a section in `AGENTS.md` summarizes something, and the full doc changes, update
+both the summary here and the full doc in the same commit.
+
 ---
 
 ## Workboard
 
 The canonical task queue is `docs/workboard.json`.
+Schema and usage contract: [`docs/workboard.md`](docs/workboard.md).
+Machine validation schema: [`docs/workboard.schema.json`](docs/workboard.schema.json).
 
 Use the `/query-workboard` skill to inspect it. Use the `/start-task` skill to execute
 a task end-to-end. Never dump the full board into context — use targeted `jq` queries.
@@ -180,6 +221,23 @@ Stop and report (do not continue) when:
 <!--    to auto-fix before committing."                                          -->
 <!-- - "Migration files must be named YYYYMMDD_NNN_description.sql or the      -->
 <!--    runner will silently skip them."                                         -->
+
+---
+
+## Environment Variables
+
+<!-- TODO: List any variable whose name agents need to know to run the project locally. -->
+<!-- Do not put secret values here. Full matrix with ownership and defaults:            -->
+
+See [`docs/ENV_VARS.md`](docs/ENV_VARS.md) for the canonical variable and secret matrix.
+
+---
+
+## Testing
+
+<!-- TODO: Fast check agents must run before marking any task done.             -->
+
+Full test strategy, file inventory, and patterns for writing new tests: [`docs/TESTING.md`](docs/TESTING.md)
 
 ---
 
