@@ -16,7 +16,9 @@ maintain, and sync skills — not to execute them against a product codebase.
   placeholder instead of a harness-specific prefix (`/` for Claude, `$` for Codex).
 - `adapters/README.md` — conventions for rendering skills into harness-specific
   directories (`.claude/skills/`, `.agents/skills/`, `.codex/skills/`).
-- `scripts/sync-skills.sh` — renders `{{CMD_PREFIX}}` and copies skills into a target repo.
+- `scripts/sync-skills-claude.sh` — renders skills for Claude (`.claude/skills/`).
+- `scripts/sync-skills-codex.sh` — renders skills for Codex (`.agents/skills/`, `.codex/skills/`).
+- `scripts/sync-skills-all.sh` — thin wrapper that runs both scripts against the same target.
 - `skills-core/skills-suggestions.md` — backlog of candidate skills and research notes.
 
 Do not hand-maintain harness-specific copies. Render them with the sync script.
@@ -43,9 +45,17 @@ version: 1.0.0
 ---
 ```
 
-The `{{CMD_PREFIX}}` placeholder must appear in any invocation example. Never
-hard-code `/` or `$` directly in a `SKILL.md` invocation line. Every `SKILL.md`
-must have a `## Guardrails` section.
+Available placeholders and their per-harness rendered values:
+
+| Placeholder | Claude | Codex |
+|---|---|---|
+| `{{CMD_PREFIX}}` | `/` | `$` |
+| `{{INSTRUCTION_FILE}}` | `CLAUDE.md` | `AGENTS.md` |
+
+`{{CMD_PREFIX}}` must appear in any invocation example. `{{INSTRUCTION_FILE}}` must be
+used wherever a skill tells the agent to read the repo instruction dispatcher. Never
+hard-code `/`, `$`, `CLAUDE.md`, or `AGENTS.md` directly in a `SKILL.md`. Every
+`SKILL.md` must have a `## Guardrails` section.
 
 ---
 
@@ -59,10 +69,12 @@ must have a `## Guardrails` section.
 5. Never remove or soften guardrails from existing skills.
 6. If derived from the suggestions backlog, mark it implemented in
    `skills-core/skills-suggestions.md`.
-7. Run a dry-run sync to verify rendering is clean:
+7. Use `{{INSTRUCTION_FILE}}` wherever the skill references the repo instruction
+   dispatcher (e.g., `CLAUDE.md` / `AGENTS.md`).
+8. Run a dry-run sync to verify rendering is clean:
 
 ```bash
-./scripts/sync-skills.sh --target /tmp/smoke-test --dry-run
+./scripts/sync-skills-all.sh --target /tmp/smoke-test --dry-run
 ```
 
 ---
@@ -70,31 +82,33 @@ must have a `## Guardrails` section.
 ## How to Sync Skills to a Target Repo
 
 ```bash
-# Standard sync (all harnesses):
-./scripts/sync-skills.sh --target /path/to/target-repo
+# Sync all harnesses at once (recommended for new repos):
+./scripts/sync-skills-all.sh --target /path/to/target-repo
 
-# With .codex symlinks instead of copies:
-./scripts/sync-skills.sh --target /path/to/target-repo --symlink-codex
+# Claude only:
+./scripts/sync-skills-claude.sh --target /path/to/target-repo
 
-# Dry-run to preview:
-./scripts/sync-skills.sh --target /path/to/target-repo --dry-run
+# Codex only (agents + codex dirs):
+./scripts/sync-skills-codex.sh --target /path/to/target-repo
 
-# Claude harness only:
-./scripts/sync-skills.sh --target /path/to/target-repo --no-agents --no-codex
+# Codex with symlinks instead of copies for .codex/:
+./scripts/sync-skills-codex.sh --target /path/to/target-repo --symlink-codex
 
-# Override prefixes:
-./scripts/sync-skills.sh --target /path/to/target-repo --claude-prefix / --codex-prefix '$'
+# Dry-run any of the above by appending --dry-run:
+./scripts/sync-skills-all.sh --target /path/to/target-repo --dry-run
 ```
 
-What the script does:
+What the scripts do:
 
-- Discovers all subdirectories of `skills-core/` dynamically — no hardcoded skill list.
-- Renders `.claude/skills/<skill>/SKILL.md` with `{{CMD_PREFIX}}` → `/`.
-- Renders `.agents/skills/<skill>/SKILL.md` with `{{CMD_PREFIX}}` → `$`.
-- With `--symlink-codex`, creates `.codex/skills/<skill>` as a symlink to
-  `../../.agents/skills/<skill>` (requires agents sync to be enabled).
+- Discover all subdirectories of `skills-core/` dynamically — no hardcoded skill list.
+- `sync-skills-claude.sh` renders `.claude/skills/<skill>/SKILL.md` substituting
+  `{{CMD_PREFIX}}` → `/` and `{{INSTRUCTION_FILE}}` → `CLAUDE.md`.
+- `sync-skills-codex.sh` renders `.agents/skills/` and `.codex/skills/` substituting
+  `{{CMD_PREFIX}}` → `$` and `{{INSTRUCTION_FILE}}` → `AGENTS.md`.
+- `sync-skills-all.sh` delegates to both scripts; Codex-only flags (`--no-agents`,
+  `--no-codex`, `--symlink-codex`) are forwarded and ignored by the Claude script.
 
-The script never modifies source files in `skills-core/`.
+No script ever modifies source files in `skills-core/`.
 
 ---
 
@@ -110,7 +124,7 @@ script implements them automatically. Read `adapters/README.md` only when:
 Adapter invariants that are never overridden during rendering:
 - The `name` field is never changed.
 - Safety guardrails are never removed.
-- Only `{{CMD_PREFIX}}` is substituted — no other content is rewritten.
+- Only declared placeholders (`{{CMD_PREFIX}}`, `{{INSTRUCTION_FILE}}`) are substituted — no other content is rewritten.
 
 ---
 
@@ -118,12 +132,13 @@ Adapter invariants that are never overridden during rendering:
 
 - Never edit rendered skill files (`.claude/skills/`, `.agents/skills/`) in any
   target repo. Edit source in `skills-core/` and re-run sync.
-- Never hardcode a skill name list inside `sync-skills.sh`. Skills are discovered
+- Never hardcode a skill name list inside any sync script. Skills are discovered
   dynamically via `find`.
 - Never commit a `SKILL.md` without a `## Guardrails` section.
 - Never commit a `SKILL.md` whose invocation example uses a hard-coded `/` or `$`
   without a `{{CMD_PREFIX}}` equivalent.
-- Never run `sync-skills.sh` against a target repo with uncommitted changes without
+- Never hard-code `CLAUDE.md` or `AGENTS.md` in a `SKILL.md` — use `{{INSTRUCTION_FILE}}`.
+- Never run a sync script against a target repo with uncommitted changes without
   `--dry-run` first.
 
 ---
@@ -143,7 +158,7 @@ grep -rn '`/' skills-core/
 grep -rn '`\$' skills-core/
 
 # Dry-run sync against a temp dir:
-./scripts/sync-skills.sh --target /tmp/ag-dev-smoke --dry-run
+./scripts/sync-skills-all.sh --target /tmp/ag-dev-smoke --dry-run
 ```
 
 ---
@@ -171,3 +186,6 @@ Do not reorganize or rewrite existing entries — append only.
 ## Discoveries
 
 <!-- Agents: append new entries here after each task cycle. -->
+
+### 2026-04-23 — Split unified sync into per-harness scripts; added {{INSTRUCTION_FILE}} placeholder
+The single `sync-skills.sh` treated Claude and Codex as a 1:1 copy beyond prefix substitution, but three real divergences existed: cross-skill references lacked `{{CMD_PREFIX}}`, the instruction dispatcher filename (`CLAUDE.md` vs `AGENTS.md`) was hardcoded as both names in every rendered file, and sub-agent launch language was undifferentiated. Replaced with `sync-skills-claude.sh` and `sync-skills-codex.sh` (plus `sync-skills-all.sh` wrapper), each substituting their own placeholder set. New rule: any harness-specific string in a skill body must become a `{{PLACEHOLDER}}` — never hardcode.

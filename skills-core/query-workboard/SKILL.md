@@ -92,5 +92,5 @@ jq '
 
 - Never mutate the board in this skill.
 - Never assume `status == "blocked"` is required to identify blocked work.
-- Never start work from this skill unless user explicitly asks to execute (handoff to `start-task`).
+- Never start work from this skill unless user explicitly asks to execute (handoff to `{{CMD_PREFIX}}start-task`).
 

@@ -10,8 +10,8 @@ Use this skill to complete exactly one task from `docs/workboard.json`.
 
 ## Workflow
 
-1. Read the repo instruction dispatcher first (`AGENTS.md` or `CLAUDE.md`).
-2. Select next startable task using the same startability rules as `query-workboard`.
+1. Read the repo instruction dispatcher first (`{{INSTRUCTION_FILE}}`).
+2. Select next startable task using the same startability rules as `{{CMD_PREFIX}}query-workboard`.
 3. If no startable task exists, report blocked items and stop.
 4. Load only the chosen task record.
 5. Claim the task by updating status `todo -> in_progress` with a targeted edit.

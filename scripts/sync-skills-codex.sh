@@ -5,20 +5,21 @@ IFS=$'\n\t'
 usage() {
   cat <<'EOF'
 Usage:
-  sync-skills.sh --target <repo-path> [options]
+  sync-skills-codex.sh --target <repo-path> [options]
 
 Options:
-  --target PATH         Target repo root (required)
-  --source PATH         Source skills-core path (default: <this-repo>/skills-core)
-  --claude-prefix STR   Replacement for {{CMD_PREFIX}} in .claude skills (default: /)
-  --codex-prefix STR    Replacement for {{CMD_PREFIX}} in .agents/.codex skills (default: $)
-  --no-claude           Skip syncing .claude/skills
-  --no-agents           Skip syncing .agents/skills
-  --no-codex            Skip syncing .codex/skills
-  --symlink-codex       Symlink .codex/skills/<skill> -> ../../.agents/skills/<skill>
-                        (requires agents sync enabled)
-  --dry-run             Print planned actions only
-  -h, --help            Show this help
+  --target PATH     Target repo root (required)
+  --source PATH     Source skills-core path (default: <this-repo>/skills-core)
+  --no-agents       Skip syncing .agents/skills
+  --no-codex        Skip syncing .codex/skills
+  --symlink-codex   Symlink .codex/skills/<skill> -> ../../.agents/skills/<skill>
+                    (requires agents sync enabled)
+  --dry-run         Print planned actions only
+  -h, --help        Show this help
+
+Renders skills-core into .agents/skills/ and .codex/skills/ with Codex-specific substitutions:
+  {{CMD_PREFIX}}       -> $
+  {{INSTRUCTION_FILE}} -> AGENTS.md
 EOF
 }
 
@@ -27,9 +28,6 @@ DEFAULT_SOURCE="$(cd "$SCRIPT_DIR/.." && pwd)/skills-core"
 
 TARGET=""
 SOURCE="$DEFAULT_SOURCE"
-CLAUDE_PREFIX="/"
-CODEX_PREFIX='$'
-SYNC_CLAUDE=1
 SYNC_AGENTS=1
 SYNC_CODEX=1
 SYMLINK_CODEX=0
@@ -44,18 +42,6 @@ while (($# > 0)); do
     --source)
       SOURCE="${2:-}"
       shift 2
-      ;;
-    --claude-prefix)
-      CLAUDE_PREFIX="${2:-}"
-      shift 2
-      ;;
-    --codex-prefix)
-      CODEX_PREFIX="${2:-}"
-      shift 2
-      ;;
-    --no-claude)
-      SYNC_CLAUDE=0
-      shift
       ;;
     --no-agents)
       SYNC_AGENTS=0
@@ -131,20 +117,22 @@ escape_sed_replacement() {
 render_skill_file() {
   local src="$1"
   local dst="$2"
-  local prefix="$3"
-  local escaped
-  escaped="$(escape_sed_replacement "$prefix")"
+  local escaped_cmd escaped_inst
+  escaped_cmd="$(escape_sed_replacement '$')"
+  escaped_inst="$(escape_sed_replacement "AGENTS.md")"
   if (( DRY_RUN == 1 )); then
-    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=%s)\n' "$src" "$dst" "$prefix"
+    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=$ {{INSTRUCTION_FILE}}=AGENTS.md)\n' "$src" "$dst"
   else
-    sed "s/{{CMD_PREFIX}}/${escaped}/g" "$src" > "$dst"
+    sed \
+      -e "s/{{CMD_PREFIX}}/${escaped_cmd}/g" \
+      -e "s/{{INSTRUCTION_FILE}}/${escaped_inst}/g" \
+      "$src" > "$dst"
   fi
 }
 
 copy_skill_dir() {
   local skill_name="$1"
   local out_root="$2"
-  local cmd_prefix="$3"
   local src_dir="$SOURCE/$skill_name"
   local out_dir="$out_root/$skill_name"
 
@@ -155,7 +143,7 @@ copy_skill_dir() {
     local dst_file="$out_dir/$rel_path"
     ensure_dir "$(dirname "$dst_file")"
     if [[ "$rel_path" == "SKILL.md" ]]; then
-      render_skill_file "$src_file" "$dst_file" "$cmd_prefix"
+      render_skill_file "$src_file" "$dst_file"
     else
       run_cmd cp "$src_file" "$dst_file"
     fi
@@ -184,14 +172,11 @@ if ((${#SKILLS[@]} == 0)); then
   exit 1
 fi
 
-echo "Syncing skills from: $SOURCE"
+echo "Syncing skills (Codex) from: $SOURCE"
 echo "Target repo: $TARGET"
 echo "Skills: ${SKILLS[*]}"
-echo "Modes: claude=$SYNC_CLAUDE agents=$SYNC_AGENTS codex=$SYNC_CODEX symlink_codex=$SYMLINK_CODEX dry_run=$DRY_RUN"
+echo "Modes: agents=$SYNC_AGENTS codex=$SYNC_CODEX symlink_codex=$SYMLINK_CODEX dry_run=$DRY_RUN"
 
-if (( SYNC_CLAUDE == 1 )); then
-  ensure_dir "$TARGET/.claude/skills"
-fi
 if (( SYNC_AGENTS == 1 )); then
   ensure_dir "$TARGET/.agents/skills"
 fi
@@ -200,20 +185,16 @@ if (( SYNC_CODEX == 1 )); then
 fi
 
 for skill in "${SKILLS[@]}"; do
-  if (( SYNC_CLAUDE == 1 )); then
-    copy_skill_dir "$skill" "$TARGET/.claude/skills" "$CLAUDE_PREFIX"
-  fi
   if (( SYNC_AGENTS == 1 )); then
-    copy_skill_dir "$skill" "$TARGET/.agents/skills" "$CODEX_PREFIX"
+    copy_skill_dir "$skill" "$TARGET/.agents/skills"
   fi
   if (( SYNC_CODEX == 1 )); then
     if (( SYMLINK_CODEX == 1 )); then
       symlink_codex_skill "$skill"
     else
-      copy_skill_dir "$skill" "$TARGET/.codex/skills" "$CODEX_PREFIX"
+      copy_skill_dir "$skill" "$TARGET/.codex/skills"
     fi
   fi
 done
 
 echo "Done."
-
