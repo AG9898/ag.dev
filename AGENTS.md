@@ -189,3 +189,6 @@ Do not reorganize or rewrite existing entries — append only.
 
 ### 2026-04-23 — Split unified sync into per-harness scripts; added {{INSTRUCTION_FILE}} placeholder
 The single `sync-skills.sh` treated Claude and Codex as a 1:1 copy beyond prefix substitution, but three real divergences existed: cross-skill references lacked `{{CMD_PREFIX}}`, the instruction dispatcher filename (`CLAUDE.md` vs `AGENTS.md`) was hardcoded as both names in every rendered file, and sub-agent launch language was undifferentiated. Replaced with `sync-skills-claude.sh` and `sync-skills-codex.sh` (plus `sync-skills-all.sh` wrapper), each substituting their own placeholder set. New rule: any harness-specific string in a skill body must become a `{{PLACEHOLDER}}` — never hardcode.
+
+### 2026-04-29 — Porting repo-local skills into core requires explicit dispatcher and prefix neutralization
+When promoting a repo-local skill into `skills-core`, command handoffs that were written as literal harness invocations (for example `$start-task`) must be rewritten to `{{CMD_PREFIX}}...` or rendered copies will drift semantically between harnesses. If the skill workflow tells the agent to consult repo instructions, it should reference `{{INSTRUCTION_FILE}}` directly in the core source to keep both Claude and Codex render outputs correct without post-editing.
