@@ -1,6 +1,6 @@
 ---
 name: edit-workboard
-description: Create and edit workboard tasks with targeted JSON patches, including dependency-safe deletion and split-task workflows, without using this skill for task selection or execution.
+description: Create new workboard tasks and edit existing task fields with targeted JSON patches, including dependency-safe deletion and split-task workflows, without using this skill for task selection or execution.
 version: 1.0.0
 ---
 
@@ -9,6 +9,8 @@ version: 1.0.0
 Use this skill to author, modify, and restructure tasks in `docs/workboard.json`.
 
 Use `{{CMD_PREFIX}}edit-workboard` when work needs to create tasks, refine task fields, or split heavy tasks into smaller scoped tasks.
+
+Do not use this skill for selecting the next task, executing tasks, or transitioning `todo -> in_progress -> done`; those belong to `{{CMD_PREFIX}}query-workboard` and `{{CMD_PREFIX}}start-task`.
 
 ## Workflow
 
@@ -44,8 +46,8 @@ Use `{{CMD_PREFIX}}edit-workboard` when work needs to create tasks, refine task 
 
 Run after every command that writes to the board:
 
-1. Apply the targeted patch using the template for that command.
-2. Update `last_updated` in the same jq expression as the patch.
+1. Apply the targeted patch using the template for that command; never rewrite the full file.
+2. Update `last_updated` in the same jq expression as the patch. Never update it separately.
 3. Validate shape:
    ```bash
    jq -e '.tasks and (.tasks | type == "array")' docs/workboard.json >/dev/null
@@ -55,7 +57,7 @@ Run after every command that writes to the board:
    npx --yes ajv-cli validate -s docs/workboard.schema.json -d docs/workboard.json
    ```
 5. If schema validation fails due to pre-existing invalid records, isolate responsibility by shape-checking `/tmp/wb.json`; report pre-existing noise separately from your edit result.
-6. If either validation fails due to your change: stop immediately, report the failure, and do not attempt another write.
+6. If either validation fails due to your change, stop immediately, report the failure, and do not attempt another write.
 7. Print a compact one-line summary of the changed task.
 
 ## Commands
@@ -78,11 +80,11 @@ Before writing:
   ```bash
   jq -e --arg id "NEW-ID" '.tasks[] | select(.id == $id)' docs/workboard.json >/dev/null && echo "ID taken"
   ```
-- Find the next unused sequence number for a group:
+- To find the next unused sequence number for a group:
   ```bash
   jq --arg g "GROUP_ID" '[.tasks[] | select(.group_id == $g) | .id] | sort | last' docs/workboard.json
   ```
-- Confirm every `depends_on` ID exists in the board.
+- Confirm every `depends_on` ID exists in the board using the existence check above for each one.
 
 ```bash
 jq --argjson task '{
@@ -130,7 +132,7 @@ docs/workboard.json > /tmp/wb.json && mv /tmp/wb.json docs/workboard.json
 Array fields are `acceptance_criteria`, `docs`, `files`, and `commands`.
 (`depends_on` and `blocked_by` use dedicated commands below.)
 
-Use `append-to` and `remove-from` for incremental changes. Use `set-array` only when replacing the entire array intentionally; run `show <ID>` first so current value is visible.
+Use `append-to` and `remove-from` for incremental changes. Use `set-array` only when replacing the whole array is intentional; run `show <ID>` first so the current value is visible.
 
 ### `append-to <ID> <field> <value>`
 
@@ -142,7 +144,7 @@ docs/workboard.json > /tmp/wb.json && mv /tmp/wb.json docs/workboard.json
 
 ### `remove-from <ID> <field> <value>`
 
-Removes by exact string match. If absent, the board is unchanged.
+Removes by exact string match. If the string is not present, the board is unchanged.
 
 ```bash
 jq --arg val "item to remove" \
@@ -152,7 +154,7 @@ docs/workboard.json > /tmp/wb.json && mv /tmp/wb.json docs/workboard.json
 
 ### `set-array <ID> <field> <json-array>`
 
-Replaces the entire array. Run `show <ID>` first.
+Replaces the entire array. Run `show <ID>` first; the current array must be visible in context before this write executes.
 
 ```bash
 jq --argjson arr '["item 1", "item 2"]' \

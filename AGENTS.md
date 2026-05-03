@@ -187,6 +187,9 @@ Do not reorganize or rewrite existing entries — append only.
 
 <!-- Agents: append new entries here after each task cycle. -->
 
+### 2026-05-03 — Skill reference files are copied without placeholder rendering
+The sync scripts render placeholders only in each skill's `SKILL.md`; additional files such as `references/*.md` are copied as-is. Keep harness-specific strings out of reference files, or extend the sync scripts before adding placeholders there.
+
 ### 2026-04-23 — Split unified sync into per-harness scripts; added {{INSTRUCTION_FILE}} placeholder
 The single `sync-skills.sh` treated Claude and Codex as a 1:1 copy beyond prefix substitution, but three real divergences existed: cross-skill references lacked `{{CMD_PREFIX}}`, the instruction dispatcher filename (`CLAUDE.md` vs `AGENTS.md`) was hardcoded as both names in every rendered file, and sub-agent launch language was undifferentiated. Replaced with `sync-skills-claude.sh` and `sync-skills-codex.sh` (plus `sync-skills-all.sh` wrapper), each substituting their own placeholder set. New rule: any harness-specific string in a skill body must become a `{{PLACEHOLDER}}` — never hardcode.
 
