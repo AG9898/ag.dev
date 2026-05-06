@@ -21,8 +21,8 @@ Each task must include:
 
 ## Formatting Guidance
 
-- Use the current ID style visible in the target workboard.
-- Keep `group_id` aligned to existing project groups.
+- Use the current ID style in this repo — inspect existing task IDs in `docs/workboard.json` to match the pattern. A common convention is `<GROUP>-NN` with an optional letter suffix for splits (e.g. `FEAT-01`, `FEAT-02A`).
+- Keep `group_id` aligned to the existing groups in this project's workboard. Do not invent new groups without the user's approval.
 - Default new tasks to `status: "todo"` unless the user asks for another state.
 - Use allowed priorities only: `critical`, `high`, `medium`, `low`.
 - Write `title` as a concise action-oriented summary.
@@ -36,7 +36,7 @@ Each task must include:
 
 ## Decomposition Rules
 
-- Split tasks when work crosses distinct surfaces such as schema, server, admin UI, public UI, docs, or tests.
+- Split tasks when work crosses distinct surfaces (schema, server, admin UI, public UI, docs).
 - Keep each task focused on one behavioral outcome.
 - Create subtasks only when they reduce ambiguity or enable independent execution.
 - Prefer explicit dependency edges over large umbrella tasks.

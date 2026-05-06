@@ -1,18 +1,18 @@
 ---
 name: project-plan
-description: Plan a proposed product or engineering change before implementation by reading only relevant docs, asking clarifying questions, drafting doc updates, and producing workboard-ready tasks after direction is accepted.
+description: Planning-first workflow for new features, product changes, integrations, or refactors. Infers minimum relevant docs, asks clarifying questions, drafts a documentation proposal, then produces workboard-compatible implementation tasks once direction is accepted.
 version: 1.0.0
 ---
 
 # Project Plan
 
-Use this skill for proposal shaping, documentation planning, and implementation breakdown. Do not jump into implementation unless the user explicitly switches from planning to execution.
+Use this skill when the user has a new feature idea, product change, integration question, refactor proposal, or wants to understand how a proposed change should fit into this repo.
 
-Use `{{CMD_PREFIX}}project-plan` when the user has a new feature idea, product change, integration question, refactor proposal, or wants to understand how a proposed change should fit into the repo.
+Do not jump into implementation unless the user explicitly switches from planning to execution.
 
 ## Workflow
 
-1. Read the repo instruction dispatcher first (`{{INSTRUCTION_FILE}}`).
+1. Read `{{INSTRUCTION_FILE}}` first to understand the project's doc structure and routing.
 2. Infer the minimum relevant docs from the proposal. Use [references/doc-routing.md](references/doc-routing.md).
 3. Gather context surgically:
    - Prefer headings, targeted searches, and specific sections over opening full docs.
@@ -25,8 +25,9 @@ Use `{{CMD_PREFIX}}project-plan` when the user has a new feature idea, product c
 8. Once documentation direction is accepted:
    - Update the relevant docs if the user has asked for execution.
    - Produce workboard-compatible implementation tasks using [references/workboard-format.md](references/workboard-format.md).
-   - If the user asks to write tasks to the board, hand off to `{{CMD_PREFIX}}edit-workboard`.
-   - If the user asks to execute the accepted work, hand off to `{{CMD_PREFIX}}start-task`.
+   - For board writes, hand off to `{{CMD_PREFIX}}edit-workboard`.
+   - For board reads or next-task selection, hand off to `{{CMD_PREFIX}}query-workboard`.
+   - For task execution, hand off to `{{CMD_PREFIX}}start-task`.
 
 ## Proposal Output
 
@@ -51,15 +52,14 @@ The proposal should describe how docs should change, not how implementation shou
 
 After the documentation direction is accepted and applied, produce tasks that another agent can execute without making product decisions.
 
-- Match the existing workboard shape and naming style.
+- Match the existing workboard shape and naming style from [references/workboard-format.md](references/workboard-format.md).
 - Split tasks by subsystem or responsibility, not by arbitrary file count.
 - Keep each task focused on one primary behavioral outcome.
 - Create subtasks only when they reduce ambiguity or enable parallel work.
 - Use `depends_on` and `blocked_by` explicitly for ordering and blockers.
 - Keep acceptance criteria behavioral and testable.
 - Prefer tasks that map cleanly to one primary surface such as schema, server API, admin UI, public UI, or docs.
-- Do not mutate `docs/workboard.json` unless the user explicitly asks to write tasks there.
-- When writing tasks to the board, use targeted edits only; never rewrite the full file.
+- Do not mutate `docs/workboard.json` unless the user explicitly asks to write tasks there; if writing, hand off to `{{CMD_PREFIX}}edit-workboard`.
 
 ## Context Discipline
 
@@ -70,10 +70,19 @@ The context window is a shared budget. Keep this skill lean:
 - Keep the first output to a documentation proposal only.
 - Defer task generation until documentation direction is settled.
 
+## Skill Handoffs
+
+| Next action | Skill |
+|---|---|
+| Query board / find next task | `{{CMD_PREFIX}}query-workboard` |
+| Write or restructure tasks | `{{CMD_PREFIX}}edit-workboard` |
+| Execute a task end-to-end | `{{CMD_PREFIX}}start-task` |
+
 ## Guardrails
 
-- Planning is the default mode for this skill; implementation requires an explicit user request.
-- Ask at least one clarification question before proposing documentation changes.
-- Do not mutate `docs/workboard.json` unless the user explicitly asks to write tasks there.
-- Do not assume legacy task fields from other repos (`type`, `summary`, `estimate`, `notes`) exist in the workboard.
-- Do not hardcode harness-specific command prefixes or instruction filenames in examples.
+- Never implement code during the initial proposal phase.
+- Never produce workboard tasks before documentation direction is accepted.
+- Never mutate `docs/workboard.json` directly — hand off to `{{CMD_PREFIX}}edit-workboard`.
+- Never assume specific group IDs, doc paths, or field names from other repos — consult `{{INSTRUCTION_FILE}}` for project-specific conventions.
+- Always ask at least one clarifying question before presenting a proposal.
+- Do not invent legacy task fields from other repos; use the current workboard schema.

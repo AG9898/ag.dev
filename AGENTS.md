@@ -195,3 +195,6 @@ The single `sync-skills.sh` treated Claude and Codex as a 1:1 copy beyond prefix
 
 ### 2026-04-29 — Porting repo-local skills into core requires explicit dispatcher and prefix neutralization
 When promoting a repo-local skill into `skills-core`, command handoffs that were written as literal harness invocations (for example `$start-task`) must be rewritten to `{{CMD_PREFIX}}...` or rendered copies will drift semantically between harnesses. If the skill workflow tells the agent to consult repo instructions, it should reference `{{INSTRUCTION_FILE}}` directly in the core source to keep both Claude and Codex render outputs correct without post-editing.
+
+### 2026-05-06 — Skills with reference files can carry a `references/` subdirectory in skills-core
+The sync scripts copy all files in a skill directory, not just `SKILL.md` — only `SKILL.md` receives placeholder substitution, everything else is copied as-is. This means project-specific reference documents (doc routing tables, workboard format specs) can be generalized and placed in `skills-core/<skill>/references/` and will render correctly into all harness targets. Keep reference files harness-neutral too; they will not receive `{{CMD_PREFIX}}` or `{{INSTRUCTION_FILE}}` substitution.
