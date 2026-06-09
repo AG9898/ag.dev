@@ -1,10 +1,10 @@
 # Doc Routing
 
-Open only the docs implied by the proposal. The specific docs available in this project are discovered by reading `{{INSTRUCTION_FILE}}` or the project's docs index.
+Open only the docs implied by the proposal. The specific docs available in this project are discovered by reading `docs/INDEX.md`, the documentation navigation map.
 
 ## General Heuristics
 
-- Read `{{INSTRUCTION_FILE}}` first to find which canonical docs exist for this project.
+- Read `docs/INDEX.md` first to find which canonical docs exist for this project.
 - Start with the narrowest likely docs for the proposal type.
 - Expand only when the proposal crosses subsystem boundaries.
 - Do not preload unrelated docs.
