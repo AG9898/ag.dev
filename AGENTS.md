@@ -14,11 +14,13 @@ maintain, and sync skills — not to execute them against a product codebase.
 - `skills-core/` — canonical skill definitions. Each skill lives in its own folder
   with a `SKILL.md`. Skills are harness-neutral: they use `{{CMD_PREFIX}}` as a
   placeholder instead of a harness-specific prefix (`/` for Claude, `$` for Codex).
+- `statusline/` — reusable machine-level status-line config for Codex and Claude.
 - `adapters/README.md` — conventions for rendering skills into harness-specific
   directories (`.claude/skills/`, `.agents/skills/`, `.codex/skills/`).
 - `scripts/sync-skills-claude.sh` — renders skills for Claude (`.claude/skills/`).
 - `scripts/sync-skills-codex.sh` — renders skills for Codex (`.agents/skills/`, `.codex/skills/`).
 - `scripts/sync-skills-all.sh` — thin wrapper that runs both scripts against the same target.
+- `scripts/install-statusline.sh` — installs reusable status-line config into a machine home.
 - `skills-core/skills-suggestions.md` — backlog of candidate skills and research notes.
 
 Do not hand-maintain harness-specific copies. Render them with the sync script.
@@ -112,13 +114,29 @@ No script ever modifies source files in `skills-core/`.
 
 ---
 
+## How to Install Status Lines
+
+```bash
+./scripts/install-statusline.sh
+./scripts/install-statusline.sh --dry-run
+./scripts/install-statusline.sh --codex-only
+./scripts/install-statusline.sh --claude-only
+```
+
+The status-line installer reads from `statusline/`, merges Codex `[tui]` keys into
+`~/.codex/config.toml`, copies Claude's command script into `~/.claude/`, and sets
+Claude's `statusLine` command in `~/.claude/settings.json`. Existing files are
+backed up before modification.
+
+---
+
 ## What Adapters Are
 
 Adapters are the rendering conventions documented in `adapters/README.md`. The sync
 script implements them automatically. Read `adapters/README.md` only when:
 
 - Designing a skill that needs rendering logic beyond `{{CMD_PREFIX}}` substitution.
-- Extending `sync-skills.sh` to support a new harness.
+- Extending the sync scripts to support a new harness.
 - Auditing whether rendered copies in a target repo are stale.
 
 Adapter invariants that are never overridden during rendering:
@@ -169,7 +187,7 @@ This file is a running notebook. After completing any task in this repo, update 
 file if you discovered:
 
 - A new pattern for structuring skill guardrails.
-- A rendering edge case in `sync-skills.sh`.
+- A rendering edge case in the sync scripts.
 - A new candidate harness that needs an adapter convention.
 - A hard rule that would have prevented a mistake you nearly made.
 
@@ -198,3 +216,6 @@ When promoting a repo-local skill into `skills-core`, command handoffs that were
 
 ### 2026-05-06 — Skills with reference files can carry a `references/` subdirectory in skills-core
 The sync scripts copy all files in a skill directory, not just `SKILL.md` — only `SKILL.md` receives placeholder substitution, everything else is copied as-is. This means project-specific reference documents (doc routing tables, workboard format specs) can be generalized and placed in `skills-core/<skill>/references/` and will render correctly into all harness targets. Keep reference files harness-neutral too; they will not receive `{{CMD_PREFIX}}` or `{{INSTRUCTION_FILE}}` substitution.
+
+### 2026-07-06 — Machine-level status-line config lives outside skills-core
+Codex and Claude status-line settings are machine-level config, not repo-rendered skills. Keep reusable source under `statusline/` and use `scripts/install-statusline.sh` to merge it into a local home directory with backups.
