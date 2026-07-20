@@ -165,8 +165,8 @@ The canonical task queue is `docs/workboard.json`.
 Schema and usage contract: [`docs/workboard.md`](docs/workboard.md).
 Machine validation schema: [`docs/workboard.schema.json`](docs/workboard.schema.json).
 
-Use the `/query-workboard` skill to inspect it. Use the `/start-task` skill to execute
-a task end-to-end. Never dump the full board into context — use targeted `jq` queries.
+Inspect it with the **query-workboard** skill; execute a task end-to-end with **start-task**.
+Never dump the full board into context — use targeted `jq` queries.
 
 A task is startable when:
 - `status == "todo"`
@@ -189,15 +189,26 @@ Targeted edit rules:
 Standard task cycle for this project:
 
 1. Read this file (`AGENTS.md` / `CLAUDE.md`) at the start of every session.
-2. Run `{{CMD_PREFIX}}query-workboard` to find the next startable task.
-3. Run `{{CMD_PREFIX}}start-task` to execute it (reads docs, implements, verifies, updates board).
+2. Invoke **query-workboard** to find the next startable task.
+3. Invoke **start-task** to execute it (reads docs, implements, verifies, updates board).
 4. Update this file if you discovered a constraint, pattern, or pitfall worth encoding.
 5. Commit changes. Summarize: what was done, what was skipped, what is next.
 
-For multi-task runs: `{{CMD_PREFIX}}ralphloop start-task iterations:N`.
+For multi-task runs, invoke **ralphloop** wrapping start-task with an iteration count.
 
-<!-- NOTE: {{CMD_PREFIX}} is rendered by sync-skills.sh: → `/` for Claude, `$` for Codex. -->
-<!-- Skills are sourced from ag.dev and synced into .claude/skills/ or .agents/skills/.   -->
+### Invoking Skills
+
+Skills live in a per-harness directory and are invoked by name with your harness's own
+command prefix — `/` in Claude Code, `$` in Codex. This file deliberately names skills
+without a prefix, because `AGENTS.md` and `CLAUDE.md` are the same file and cannot carry
+both. Use whichever your harness expects.
+
+<!-- NOTE: Do NOT use {{CMD_PREFIX}} in this file. The sync scripts render placeholders  -->
+<!-- only inside skills-core/*/SKILL.md — they never process a target repo's AGENTS.md,  -->
+<!-- so a placeholder here ships to the target as literal text. Name skills unprefixed.  -->
+<!-- TODO: List the skills actually synced into this repo.                               -->
+<!-- Skills are sourced from ag.dev and synced into .claude/, .agents/, and .codex/.      -->
+<!-- Never edit the rendered copies — edit the source in ag.dev and re-run the sync.      -->
 
 ### Stopping Conditions
 

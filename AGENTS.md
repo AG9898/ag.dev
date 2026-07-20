@@ -158,6 +158,9 @@ Adapter invariants that are never overridden during rendering:
 - Never hard-code `CLAUDE.md` or `AGENTS.md` in a `SKILL.md` — use `{{INSTRUCTION_FILE}}`.
 - Never run a sync script against a target repo with uncommitted changes without
   `--dry-run` first.
+- Never use `{{CMD_PREFIX}}` or `{{INSTRUCTION_FILE}}` in `AGENTS_EX.md`. Placeholders are
+  rendered only inside `skills-core/*/SKILL.md`; a target repo's `AGENTS.md` is never
+  processed, so a placeholder there ships as literal text. Name skills without a prefix.
 
 ---
 
@@ -219,3 +222,6 @@ The sync scripts copy all files in a skill directory, not just `SKILL.md` — on
 
 ### 2026-07-06 — Machine-level status-line config lives outside skills-core
 Codex and Claude status-line settings are machine-level config, not repo-rendered skills. Keep reusable source under `statusline/` and use `scripts/install-statusline.sh` to merge it into a local home directory with backups.
+
+### 2026-07-20 — AGENTS_EX.md cannot use placeholders, and cannot carry a harness prefix at all
+`AGENTS_EX.md` used `{{CMD_PREFIX}}query-workboard` with a note claiming the sync script rendered it, but the scripts only process `skills-core/*/SKILL.md` — a target repo's `AGENTS.md` is never touched, so the placeholder shipped as literal text (caught during the cloo scaffold). Substitution is also not the fix: `CLAUDE.md` is a symlink to `AGENTS.md`, so one file cannot hold both `/` and `$`. Skills are now named unprefixed in bold with a short "Invoking Skills" section explaining the convention. The same constraint applies to any future template file that lands outside `skills-core/`.
