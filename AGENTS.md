@@ -53,11 +53,13 @@ Available placeholders and their per-harness rendered values:
 |---|---|---|
 | `{{CMD_PREFIX}}` | `/` | `$` |
 | `{{INSTRUCTION_FILE}}` | `CLAUDE.md` | `AGENTS.md` |
+| `{{USER_INPUT_TOOL}}` | `AskUserQuestion` | `request_user_input` |
 
 `{{CMD_PREFIX}}` must appear in any invocation example. `{{INSTRUCTION_FILE}}` must be
-used wherever a skill tells the agent to read the repo instruction dispatcher. Never
-hard-code `/`, `$`, `CLAUDE.md`, or `AGENTS.md` directly in a `SKILL.md`. Every
-`SKILL.md` must have a `## Guardrails` section.
+used wherever a skill tells the agent to read the repo instruction dispatcher, and
+`{{USER_INPUT_TOOL}}` wherever it directs structured user input. Never hard-code `/`,
+`$`, `CLAUDE.md`, `AGENTS.md`, `AskUserQuestion`, or `request_user_input` directly in a
+`SKILL.md`. Every `SKILL.md` must have a `## Guardrails` section.
 
 ---
 
@@ -72,7 +74,8 @@ hard-code `/`, `$`, `CLAUDE.md`, or `AGENTS.md` directly in a `SKILL.md`. Every
 6. If derived from the suggestions backlog, mark it implemented in
    `skills-core/skills-suggestions.md`.
 7. Use `{{INSTRUCTION_FILE}}` wherever the skill references the repo instruction
-   dispatcher (e.g., `CLAUDE.md` / `AGENTS.md`).
+   dispatcher (e.g., `CLAUDE.md` / `AGENTS.md`), and `{{USER_INPUT_TOOL}}` for
+   structured user-input instructions.
 8. Run a dry-run sync to verify rendering is clean:
 
 ```bash
@@ -96,6 +99,12 @@ hard-code `/`, `$`, `CLAUDE.md`, or `AGENTS.md` directly in a `SKILL.md`. Every
 # Codex with symlinks instead of copies for .codex/:
 ./scripts/sync-skills-codex.sh --target /path/to/target-repo --symlink-codex
 
+# Sync only one skill:
+./scripts/sync-skills-all.sh --target /path/to/target-repo --skill project-plan
+
+# Update only a skill's SKILL.md and preserve its target-specific references:
+./scripts/sync-skills-all.sh --target /path/to/target-repo --skill project-plan --skill-md-only
+
 # Dry-run any of the above by appending --dry-run:
 ./scripts/sync-skills-all.sh --target /path/to/target-repo --dry-run
 ```
@@ -104,11 +113,15 @@ What the scripts do:
 
 - Discover all subdirectories of `skills-core/` dynamically — no hardcoded skill list.
 - `sync-skills-claude.sh` renders `.claude/skills/<skill>/SKILL.md` substituting
-  `{{CMD_PREFIX}}` → `/` and `{{INSTRUCTION_FILE}}` → `CLAUDE.md`.
+  `{{CMD_PREFIX}}` → `/`, `{{INSTRUCTION_FILE}}` → `CLAUDE.md`, and
+  `{{USER_INPUT_TOOL}}` → `AskUserQuestion`.
 - `sync-skills-codex.sh` renders `.agents/skills/` and `.codex/skills/` substituting
-  `{{CMD_PREFIX}}` → `$` and `{{INSTRUCTION_FILE}}` → `AGENTS.md`.
+  `{{CMD_PREFIX}}` → `$`, `{{INSTRUCTION_FILE}}` → `AGENTS.md`, and
+  `{{USER_INPUT_TOOL}}` → `request_user_input`.
 - `sync-skills-all.sh` delegates to both scripts; Codex-only flags (`--no-agents`,
   `--no-codex`, `--symlink-codex`) are forwarded and ignored by the Claude script.
+- `--skill <name>` limits a sync to one source skill. `--skill-md-only` renders only
+  its `SKILL.md`, preserving target-specific files such as `references/`.
 
 No script ever modifies source files in `skills-core/`.
 
@@ -142,7 +155,8 @@ script implements them automatically. Read `adapters/README.md` only when:
 Adapter invariants that are never overridden during rendering:
 - The `name` field is never changed.
 - Safety guardrails are never removed.
-- Only declared placeholders (`{{CMD_PREFIX}}`, `{{INSTRUCTION_FILE}}`) are substituted — no other content is rewritten.
+- Only declared placeholders (`{{CMD_PREFIX}}`, `{{INSTRUCTION_FILE}}`,
+  `{{USER_INPUT_TOOL}}`) are substituted — no other content is rewritten.
 
 ---
 
@@ -156,11 +170,14 @@ Adapter invariants that are never overridden during rendering:
 - Never commit a `SKILL.md` whose invocation example uses a hard-coded `/` or `$`
   without a `{{CMD_PREFIX}}` equivalent.
 - Never hard-code `CLAUDE.md` or `AGENTS.md` in a `SKILL.md` — use `{{INSTRUCTION_FILE}}`.
+- Never hard-code `AskUserQuestion` or `request_user_input` in a `SKILL.md` — use
+  `{{USER_INPUT_TOOL}}`.
 - Never run a sync script against a target repo with uncommitted changes without
   `--dry-run` first.
-- Never use `{{CMD_PREFIX}}` or `{{INSTRUCTION_FILE}}` in `AGENTS_EX.md`. Placeholders are
-  rendered only inside `skills-core/*/SKILL.md`; a target repo's `AGENTS.md` is never
-  processed, so a placeholder there ships as literal text. Name skills without a prefix.
+- Never use `{{CMD_PREFIX}}`, `{{INSTRUCTION_FILE}}`, or `{{USER_INPUT_TOOL}}` in
+  `AGENTS_EX.md`. Placeholders are rendered only inside `skills-core/*/SKILL.md`; a
+  target repo's `AGENTS.md` is never processed, so a placeholder there ships as literal
+  text. Name skills without a prefix.
 
 ---
 
@@ -225,3 +242,6 @@ Codex and Claude status-line settings are machine-level config, not repo-rendere
 
 ### 2026-07-20 — AGENTS_EX.md cannot use placeholders, and cannot carry a harness prefix at all
 `AGENTS_EX.md` used `{{CMD_PREFIX}}query-workboard` with a note claiming the sync script rendered it, but the scripts only process `skills-core/*/SKILL.md` — a target repo's `AGENTS.md` is never touched, so the placeholder shipped as literal text (caught during the cloo scaffold). Substitution is also not the fix: `CLAUDE.md` is a symlink to `AGENTS.md`, so one file cannot hold both `/` and `$`. Skills are now named unprefixed in bold with a short "Invoking Skills" section explaining the convention. The same constraint applies to any future template file that lands outside `skills-core/`.
+
+### 2026-07-21 — Structured input requires a harness-specific placeholder
+`project-plan` needs Claude's `AskUserQuestion` and Codex's `request_user_input`; preserve a neutral source by using `{{USER_INPUT_TOOL}}` and rendering it in both per-harness scripts. Use `--skill <name> --skill-md-only` for an instruction-only rollout when target skills contain repo-specific reference files.

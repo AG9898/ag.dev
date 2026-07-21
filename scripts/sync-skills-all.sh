@@ -4,7 +4,7 @@ IFS=$'\n\t'
 
 # Thin wrapper: runs sync-skills-claude.sh and sync-skills-codex.sh with the same arguments.
 # Flags not recognised by a sub-script are silently ignored by that script.
-# Both scripts share: --target, --source, --dry-run
+# Both scripts share: --target, --source, --skill, --skill-md-only, --dry-run
 # Codex-only flags passed through: --no-agents, --no-codex, --symlink-codex
 
 usage() {
@@ -15,6 +15,8 @@ Usage:
 Options:
   --target PATH       Target repo root (required)
   --source PATH       Source skills-core path (default: <this-repo>/skills-core)
+  --skill NAME        Sync only one skill
+  --skill-md-only     Render only SKILL.md; preserve target resource files
   --no-agents         Skip syncing .agents/skills  (Codex script only)
   --no-codex          Skip syncing .codex/skills   (Codex script only)
   --symlink-codex     Symlink .codex -> .agents    (Codex script only)

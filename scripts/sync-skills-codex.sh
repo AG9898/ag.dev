@@ -10,6 +10,8 @@ Usage:
 Options:
   --target PATH     Target repo root (required)
   --source PATH     Source skills-core path (default: <this-repo>/skills-core)
+  --skill NAME      Sync only one skill
+  --skill-md-only   Render only SKILL.md; preserve target resource files
   --no-agents       Skip syncing .agents/skills
   --no-codex        Skip syncing .codex/skills
   --symlink-codex   Symlink .codex/skills/<skill> -> ../../.agents/skills/<skill>
@@ -20,6 +22,7 @@ Options:
 Renders skills-core into .agents/skills/ and .codex/skills/ with Codex-specific substitutions:
   {{CMD_PREFIX}}       -> $
   {{INSTRUCTION_FILE}} -> AGENTS.md
+  {{USER_INPUT_TOOL}}  -> request_user_input
 EOF
 }
 
@@ -32,6 +35,8 @@ SYNC_AGENTS=1
 SYNC_CODEX=1
 SYMLINK_CODEX=0
 DRY_RUN=0
+SKILL_FILTER=""
+SKILL_MD_ONLY=0
 
 while (($# > 0)); do
   case "$1" in
@@ -42,6 +47,18 @@ while (($# > 0)); do
     --source)
       SOURCE="${2:-}"
       shift 2
+      ;;
+    --skill)
+      if [[ -z "${2:-}" ]]; then
+        echo "Error: --skill requires a name." >&2
+        exit 1
+      fi
+      SKILL_FILTER="${2:-}"
+      shift 2
+      ;;
+    --skill-md-only)
+      SKILL_MD_ONLY=1
+      shift
       ;;
     --no-agents)
       SYNC_AGENTS=0
@@ -117,15 +134,17 @@ escape_sed_replacement() {
 render_skill_file() {
   local src="$1"
   local dst="$2"
-  local escaped_cmd escaped_inst
+  local escaped_cmd escaped_inst escaped_user_input
   escaped_cmd="$(escape_sed_replacement '$')"
   escaped_inst="$(escape_sed_replacement "AGENTS.md")"
+  escaped_user_input="$(escape_sed_replacement "request_user_input")"
   if (( DRY_RUN == 1 )); then
-    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=$ {{INSTRUCTION_FILE}}=AGENTS.md)\n' "$src" "$dst"
+    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=$ {{INSTRUCTION_FILE}}=AGENTS.md {{USER_INPUT_TOOL}}=request_user_input)\n' "$src" "$dst"
   else
     sed \
       -e "s/{{CMD_PREFIX}}/${escaped_cmd}/g" \
       -e "s/{{INSTRUCTION_FILE}}/${escaped_inst}/g" \
+      -e "s/{{USER_INPUT_TOOL}}/${escaped_user_input}/g" \
       "$src" > "$dst"
   fi
 }
@@ -140,6 +159,9 @@ copy_skill_dir() {
 
   while IFS= read -r src_file; do
     local rel_path="${src_file#"$src_dir"/}"
+    if (( SKILL_MD_ONLY == 1 )) && [[ "$rel_path" != "SKILL.md" ]]; then
+      continue
+    fi
     local dst_file="$out_dir/$rel_path"
     ensure_dir "$(dirname "$dst_file")"
     if [[ "$rel_path" == "SKILL.md" ]]; then
@@ -172,10 +194,18 @@ if ((${#SKILLS[@]} == 0)); then
   exit 1
 fi
 
+if [[ -n "$SKILL_FILTER" ]]; then
+  if [[ ! "$SKILL_FILTER" =~ ^[a-z0-9][a-z0-9-]*$ ]] || [[ ! -d "$SOURCE/$SKILL_FILTER" ]]; then
+    echo "Error: skill does not exist under source: $SKILL_FILTER" >&2
+    exit 1
+  fi
+  SKILLS=("$SKILL_FILTER")
+fi
+
 echo "Syncing skills (Codex) from: $SOURCE"
 echo "Target repo: $TARGET"
 echo "Skills: ${SKILLS[*]}"
-echo "Modes: agents=$SYNC_AGENTS codex=$SYNC_CODEX symlink_codex=$SYMLINK_CODEX dry_run=$DRY_RUN"
+echo "Modes: agents=$SYNC_AGENTS codex=$SYNC_CODEX symlink_codex=$SYMLINK_CODEX dry_run=$DRY_RUN skill_md_only=$SKILL_MD_ONLY"
 
 if (( SYNC_AGENTS == 1 )); then
   ensure_dir "$TARGET/.agents/skills"

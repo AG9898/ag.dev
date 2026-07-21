@@ -13,6 +13,7 @@ Canonical, harness-neutral skill definitions live here.
 Adapters copy these skills into harness-specific directories and apply light rendering:
 
 - Replace `{{CMD_PREFIX}}` with the harness command prefix (for example `/` or `$`) in usage examples.
+- Replace `{{INSTRUCTION_FILE}}` and `{{USER_INPUT_TOOL}}` with the harness-specific instruction file and structured user-input tool.
 - Keep `name` stable. Command discoverability should come from target path + harness behavior, not from rewriting skill semantics.
 - Do not remove safety rules in this folder when adapting.
 
@@ -22,4 +23,3 @@ Adapters copy these skills into harness-specific directories and apply light ren
 - Never dump full workboard contents into chat when a targeted query is enough.
 - Never bulk-rewrite the board when a targeted task status edit is enough.
 - Never use destructive cleanup (`git checkout -- .`, `git clean -fd`, reset-hard) in loop skills.
-

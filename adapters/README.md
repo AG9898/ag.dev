@@ -15,6 +15,7 @@ Source skills use placeholders that are substituted per harness during rendering
 |---|---|---|
 | `{{CMD_PREFIX}}` | `/` | `$` |
 | `{{INSTRUCTION_FILE}}` | `CLAUDE.md` | `AGENTS.md` |
+| `{{USER_INPUT_TOOL}}` | `AskUserQuestion` | `request_user_input` |
 
 ## Render Rules
 
@@ -40,6 +41,12 @@ Source skills use placeholders that are substituted per harness during rendering
 
 # Dry-run:
 ./scripts/sync-skills-all.sh --target /path/to/repo --dry-run
+
+# Sync only one skill:
+./scripts/sync-skills-all.sh --target /path/to/repo --skill project-plan
+
+# Update a skill's instructions while preserving target-specific references:
+./scripts/sync-skills-all.sh --target /path/to/repo --skill project-plan --skill-md-only
 ```
 
 ## Adding a New Placeholder

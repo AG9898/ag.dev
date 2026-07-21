@@ -10,12 +10,15 @@ Usage:
 Options:
   --target PATH     Target repo root (required)
   --source PATH     Source skills-core path (default: <this-repo>/skills-core)
+  --skill NAME      Sync only one skill
+  --skill-md-only   Render only SKILL.md; preserve target resource files
   --dry-run         Print planned actions only
   -h, --help        Show this help
 
 Renders skills-core into .claude/skills/ with Claude-specific substitutions:
   {{CMD_PREFIX}}      -> /
   {{INSTRUCTION_FILE}} -> CLAUDE.md
+  {{USER_INPUT_TOOL}}  -> AskUserQuestion
 EOF
 }
 
@@ -25,6 +28,8 @@ DEFAULT_SOURCE="$(cd "$SCRIPT_DIR/.." && pwd)/skills-core"
 TARGET=""
 SOURCE="$DEFAULT_SOURCE"
 DRY_RUN=0
+SKILL_FILTER=""
+SKILL_MD_ONLY=0
 
 while (($# > 0)); do
   case "$1" in
@@ -35,6 +40,18 @@ while (($# > 0)); do
     --source)
       SOURCE="${2:-}"
       shift 2
+      ;;
+    --skill)
+      if [[ -z "${2:-}" ]]; then
+        echo "Error: --skill requires a name." >&2
+        exit 1
+      fi
+      SKILL_FILTER="${2:-}"
+      shift 2
+      ;;
+    --skill-md-only)
+      SKILL_MD_ONLY=1
+      shift
       ;;
     --dry-run)
       DRY_RUN=1
@@ -93,15 +110,17 @@ escape_sed_replacement() {
 render_skill_file() {
   local src="$1"
   local dst="$2"
-  local escaped_cmd escaped_inst
+  local escaped_cmd escaped_inst escaped_user_input
   escaped_cmd="$(escape_sed_replacement "/")"
   escaped_inst="$(escape_sed_replacement "CLAUDE.md")"
+  escaped_user_input="$(escape_sed_replacement "AskUserQuestion")"
   if (( DRY_RUN == 1 )); then
-    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=/ {{INSTRUCTION_FILE}}=CLAUDE.md)\n' "$src" "$dst"
+    printf '[dry-run] render %s -> %s ({{CMD_PREFIX}}=/ {{INSTRUCTION_FILE}}=CLAUDE.md {{USER_INPUT_TOOL}}=AskUserQuestion)\n' "$src" "$dst"
   else
     sed \
       -e "s/{{CMD_PREFIX}}/${escaped_cmd}/g" \
       -e "s/{{INSTRUCTION_FILE}}/${escaped_inst}/g" \
+      -e "s/{{USER_INPUT_TOOL}}/${escaped_user_input}/g" \
       "$src" > "$dst"
   fi
 }
@@ -116,6 +135,9 @@ copy_skill_dir() {
 
   while IFS= read -r src_file; do
     local rel_path="${src_file#"$src_dir"/}"
+    if (( SKILL_MD_ONLY == 1 )) && [[ "$rel_path" != "SKILL.md" ]]; then
+      continue
+    fi
     local dst_file="$out_dir/$rel_path"
     ensure_dir "$(dirname "$dst_file")"
     if [[ "$rel_path" == "SKILL.md" ]]; then
@@ -133,10 +155,18 @@ if ((${#SKILLS[@]} == 0)); then
   exit 1
 fi
 
+if [[ -n "$SKILL_FILTER" ]]; then
+  if [[ ! "$SKILL_FILTER" =~ ^[a-z0-9][a-z0-9-]*$ ]] || [[ ! -d "$SOURCE/$SKILL_FILTER" ]]; then
+    echo "Error: skill does not exist under source: $SKILL_FILTER" >&2
+    exit 1
+  fi
+  SKILLS=("$SKILL_FILTER")
+fi
+
 echo "Syncing skills (Claude) from: $SOURCE"
 echo "Target repo: $TARGET"
 echo "Skills: ${SKILLS[*]}"
-echo "dry_run=$DRY_RUN"
+echo "dry_run=$DRY_RUN skill_md_only=$SKILL_MD_ONLY"
 
 ensure_dir "$TARGET/.claude/skills"
 
