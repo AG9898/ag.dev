@@ -21,7 +21,7 @@
 <!-- This is the backend API for the Acme data pipeline. Agents implement        -->
 <!-- workboard tasks: features, fixes, schema migrations, and infra changes.     -->
 <!-- The canonical task queue is docs/workboard.json.                            -->
-<!-- Skills are available at .claude/skills/ (synced from ag.dev).              -->
+<!-- Skills are synced from ag.dev into this harness's skills directory.        -->
 
 ---
 
@@ -79,8 +79,11 @@ docs/          Project docs and task queue
   workboard.md    Workboard field definitions and usage rules
 tests/         Test suite
 scripts/       Utility scripts
-.claude/       Claude harness config
-  skills/      Synced skills (do not edit here — edit source in ag.dev)
+.claude/       Claude harness config (skills/ — synced, do not edit here)
+.agents/       Codex harness config (skills/ — synced, do not edit here)
+.codex/        Codex harness config (skills/ — synced, do not edit here)
+               Keep only the directories your harness actually uses.
+               Edit skill sources in ag.dev and re-run the sync.
 -->
 ```
 
