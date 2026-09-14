@@ -245,3 +245,9 @@ Codex and Claude status-line settings are machine-level config, not repo-rendere
 
 ### 2026-07-21 — Structured input requires a harness-specific placeholder
 `project-plan` needs Claude's `AskUserQuestion` and Codex's `request_user_input`; preserve a neutral source by using `{{USER_INPUT_TOOL}}` and rendering it in both per-harness scripts. Use `--skill <name> --skill-md-only` for an instruction-only rollout when target skills contain repo-specific reference files.
+
+### 2026-09-13 — Documentation audits must discover routing topology before scoring health
+Projects use both `docs/INDEX.md` and `docs/README.md` as canonical hubs, often with nested parent README indexes. Documentation-health tooling must discover those routes from the instruction dispatcher and nearest indexes rather than assuming one flat index or treating length alone as a problem.
+
+### 2026-09-13 — Link validation must ignore commented documentation templates
+Documentation indexes can keep planned-document examples in HTML comments, which are not live navigation links. Audit helpers should remove comments before checking links or code references while preserving real source line positions for reported findings.
