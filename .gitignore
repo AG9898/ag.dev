@@ -1,0 +1,3 @@
+# Machine-local global skill-sync registry and baselines.
+config/skill-targets.local.json
+config/skill-sync-state.local.json

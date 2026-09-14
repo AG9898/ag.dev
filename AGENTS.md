@@ -20,6 +20,7 @@ maintain, and sync skills — not to execute them against a product codebase.
 - `scripts/sync-skills-claude.sh` — renders skills for Claude (`.claude/skills/`).
 - `scripts/sync-skills-codex.sh` — renders skills for Codex (`.agents/skills/`, `.codex/skills/`).
 - `scripts/sync-skills-all.sh` — thin wrapper that runs both scripts against the same target.
+- `scripts/resync-skills.py` — registry-driven, drift-safe refresh for opted-in skills across local target repos.
 - `scripts/install-statusline.sh` — installs reusable status-line config into a machine home.
 - `skills-core/skills-suggestions.md` — backlog of candidate skills and research notes.
 
@@ -124,6 +125,29 @@ What the scripts do:
   its `SKILL.md`, preserving target-specific files such as `references/`.
 
 No script ever modifies source files in `skills-core/`.
+
+### Re-syncing Registered Target Repos
+
+Use `config/skill-targets.example.json` as the template for the ignored local registry
+`config/skill-targets.local.json`. Each target explicitly declares its output layout,
+skills, and whether new source skills may be created there; never infer targets by
+scanning a broad projects directory.
+
+```bash
+# Read-only status report (the default).
+python3 scripts/resync-skills.py
+
+# Establish a baseline for existing target files without changing them.
+python3 scripts/resync-skills.py --adopt
+
+# Write only source changes whose target copy is unchanged since that baseline.
+python3 scripts/resync-skills.py --apply
+```
+
+The state file is ignored and stores hashes per target, output, skill, and file.
+`--apply` reports target-local changes as `customized` or `conflict` rather than
+overwriting them, skips dirty Git worktrees unless `--allow-dirty` is explicit, and
+never deletes target files.
 
 ---
 
@@ -251,3 +275,9 @@ Projects use both `docs/INDEX.md` and `docs/README.md` as canonical hubs, often 
 
 ### 2026-09-13 — Link validation must ignore commented documentation templates
 Documentation indexes can keep planned-document examples in HTML comments, which are not live navigation links. Audit helpers should remove comments before checking links or code references while preserving real source line positions for reported findings.
+
+### 2026-09-13 — Selective skill sync preserves resources but not target SKILL.md edits
+The `--skill-md-only` mode is useful for refreshing a core skill's rendered instructions while retaining target-specific reference files, but it overwrites the target `SKILL.md` without a drift check. A universal re-sync tool therefore needs per-file baselines and must classify local instruction edits as conflicts rather than treating selective sync as inherently safe.
+
+### 2026-09-13 — Global skill re-sync needs explicit targets and per-file baselines
+Do not discover targets by scanning a broad projects directory: repositories can have different harness layouts and local-only skills. Use an ignored local registry to opt in each target, then update only files unchanged since their recorded rendered baseline; classify any untracked or changed target copy as unmanaged, customized, or conflicting instead of overwriting it.

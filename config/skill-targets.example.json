@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "targets": [
+    {
+      "name": "example-project",
+      "path": "/absolute/path/to/example-project",
+      "outputs": ["claude", "agents", "codex"],
+      "skills": ["project-plan", "query-workboard"],
+      "allow_new_skills": false
+    }
+  ]
+}

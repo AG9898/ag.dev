@@ -9,6 +9,8 @@ This repo is intended to be the source of truth for reusable, cross-project skil
 - `skills-core/`: Canonical, harness-neutral skills.
 - `statusline/`: Reusable Codex and Claude status-line config.
 - `scripts/sync-skills-all.sh`: Sync/render script for target repos.
+- `scripts/resync-skills.py`: Safely re-sync opted-in skills across registered local repos.
+- `config/skill-targets.example.json`: Template for the machine-local re-sync registry.
 - `scripts/install-statusline.sh`: Install status-line config on a machine.
 - `adapters/`: Adapter notes and conventions.
 
@@ -36,6 +38,31 @@ Useful options:
 ./scripts/sync-skills-claude.sh --target /path/to/repo
 ./scripts/sync-skills-codex.sh --target /path/to/repo --symlink-codex
 ```
+
+## Re-sync Skills Across Projects
+
+Use `config/skill-targets.example.json` to create the ignored local registry at
+`config/skill-targets.local.json`. Register each project deliberately: its existing
+output directories, opted-in skills, and whether new skills may be installed.
+
+```bash
+# Inspect every registered target. This never writes.
+python3 scripts/resync-skills.py
+
+# Record the current rendered copies as a baseline without changing target files.
+python3 scripts/resync-skills.py --adopt
+
+# Apply only files unchanged since the recorded baseline.
+python3 scripts/resync-skills.py --apply
+
+# Limit a review or update to one target and skill.
+python3 scripts/resync-skills.py --target example-project --skill project-plan
+```
+
+The state file is local and ignored. Files changed in a target after their baseline
+are reported as `customized` or `conflict` and are never overwritten by this script.
+Targets with a dirty Git worktree are skipped by `--apply` unless `--allow-dirty` is
+explicitly supplied. The script never deletes target files.
 
 ## Install Status Lines
 
