@@ -1,7 +1,7 @@
 ---
 name: documentation-health
 description: Audit and conservatively clean a repository's documentation when it has grown, drifted, or become difficult for agents to navigate.
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Documentation Health
@@ -27,13 +27,13 @@ Start with `docs/`, then include root instructions and section `README.md` files
 
 1. Check the worktree and identify pre-existing changes that must be preserved.
 2. Discover the routing topology from `{{INSTRUCTION_FILE}}`, primary index candidates (`docs/INDEX.md` and `docs/README.md`), and nested section indexes or READMEs.
-3. Run the evidence helpers from this skill directory. Prefer their JSON output and targeted queries over loading documents wholesale:
+3. Run the evidence helpers from the target repository root, invoking each script by its path inside this skill directory (`<skill-dir>` below). Prefer their JSON output and targeted queries over loading documents wholesale:
 
    ```bash
-   python3 scripts/docs-inventory.py . --json
-   python3 scripts/check-doc-links.py . --json
-   python3 scripts/check-doc-code-refs.py . --json
-   python3 scripts/docs-churn.py . --json
+   python3 <skill-dir>/scripts/docs-inventory.py . --json
+   python3 <skill-dir>/scripts/check-doc-links.py . --json
+   python3 <skill-dir>/scripts/check-doc-code-refs.py . --json
+   python3 <skill-dir>/scripts/docs-churn.py . --json
    ```
 
 4. Treat metrics as triage only. Length, age, missing inbound links, and code churn identify candidates; none independently proves that a document is wrong or should be split.

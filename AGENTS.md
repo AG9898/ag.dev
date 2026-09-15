@@ -281,3 +281,6 @@ The `--skill-md-only` mode is useful for refreshing a core skill's rendered inst
 
 ### 2026-09-13 — Global skill re-sync needs explicit targets and per-file baselines
 Do not discover targets by scanning a broad projects directory: repositories can have different harness layouts and local-only skills. Use an ignored local registry to opt in each target, then update only files unchanged since their recorded rendered baseline; classify any untracked or changed target copy as unmanaged, customized, or conflicting instead of overwriting it.
+
+### 2026-09-15 — resync-skills.py does not understand symlinked output layouts
+The registry writes each declared output as real files, so a target whose `.claude/skills` symlinks to `.agents/skills` (axi) must declare only `agents`, or the Claude render lands first and the Codex copy is classified `unmanaged`. Targets that symlink per-skill `.codex/skills/<skill>` entries to `.agents/skills/` (Weather-and-Wellness-Dashboard, bites) should declare `claude` + `agents` and get the new `.codex` symlink created by hand to keep their convention.
